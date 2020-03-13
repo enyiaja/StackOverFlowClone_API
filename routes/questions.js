@@ -44,6 +44,17 @@ router.get('/', (req, res) => {
    });
 });
 
+// View single question
+router.get('/view/:id', (req, res) => {
+   Question.findOne({
+     _id: req.params.id
+   })
+   .populate('user answers.answerUser', '_id lastname firstname')
+   .then(question => {
+      res.json(question);
+   });
+ });
+
 // Ask Question
 router.post('/', authenticateJWT, (req, res) => {
    const { id } = req.user;

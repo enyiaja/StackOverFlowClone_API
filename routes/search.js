@@ -14,7 +14,6 @@ const User = mongoose.model('users');
 // Search for Questions
 router.get('/questions', (req, res) => {
    const q = req.query['q'];
-   console.log(q);
    if(q === 'undefined' || q == null || q == ""){
       res.status(400).json('Please specify a search string!');
    }
@@ -34,18 +33,19 @@ router.get('/questions', (req, res) => {
 // Search for Answers
 router.get('/answers', (req, res) => {
    const q = req.query['q'];
-   console.log(q);
    if(q === 'undefined' || q == null || q == ""){
       res.status(400).json('Please specify a search string!');
    }
 
-   Question.find( 
-      // Find answer containing search string
-      { 'answers.answerBody': {$regex: new RegExp(q)} },
-      // Exclude some data from documents
-      { 'answers.answerBody': 1, _id: 1 }
-   )
-   .populate('answers.answerUser', '_id lastname firstname')
+   Question.aggregate([
+      { $match: {'answers.answerBody': {$regex: new RegExp(q)}} },
+      { $unwind: "$answers" },
+      { $match: {'answers.answerBody': {$regex: new RegExp(q)}} },
+      { $group: {
+            _id: "$_id",
+            answers: { $push: "$answers" },
+      } },
+   ])
    .then(questions => {
       res.json(questions);
    });
@@ -54,7 +54,6 @@ router.get('/answers', (req, res) => {
 // Search for Users
 router.get('/users', (req, res) => {
    const q = req.query['q'];
-   console.log(q);
    if(q === 'undefined' || q == null || q == ""){
       res.status(400).json('Please specify a search string!');
    }
