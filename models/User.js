@@ -23,6 +23,20 @@ const UserSchema = new Schema({
       type: String,
       required: true
    },
+   notifications: [{
+      notificationBody: {
+         type: String,
+         required: true
+      },
+      notificationViewed: {
+         type: Boolean,
+         default: false
+      },
+      notificationDate: {
+         type: Date,
+         default: Date.now,
+      }
+   }],
 });
 
 UserSchema.methods.generateJWT = function() {

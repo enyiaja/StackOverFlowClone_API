@@ -53,6 +53,16 @@ const QuestionSchema = new Schema({
          default: Date.now,
       }
    }],
+   subscribers: [{
+      subscriberUser: {
+         type: Schema.Types.ObjectId,
+         ref: 'users',
+      },
+      subscribeDate: {
+         type: Date,
+         default: Date.now,
+      }
+   }],
 });
 QuestionSchema.index({ title: 'text', body: 'text', 'answers.answerBody': 'text' });
 

@@ -35,6 +35,20 @@ const deleteUpvoter = (questionId, userId) => {
    })
 }
 
+// Function to notify a user for a subscribed question
+const notifyUser = (questionTitle, userId) => {
+
+   User.findById(userId)
+   .then(user => {
+      const newNotification = {
+         notificationBody: "The question, \"" + questionTitle + "\" has been answered",
+      }
+
+      user.notifications.unshift(newNotification);
+      user.save();
+   })
+}
+
 // View Questions
 router.get('/', (req, res) => {
    Question.find()
@@ -46,9 +60,10 @@ router.get('/', (req, res) => {
 
 // View single question
 router.get('/view/:id', (req, res) => {
-   Question.findOne({
-     _id: req.params.id
-   })
+   Question.findOne(
+      { _id: req.params.id },
+      { subscribers: 0, __v: 0 }
+   )
    .populate('user answers.answerUser', '_id lastname firstname')
    .then(question => {
       res.json(question);
@@ -74,7 +89,7 @@ router.post('/', authenticateJWT, (req, res) => {
    });
 });
 
-// Add Answer
+// Answer a question
 router.post('/answer/:id', authenticateJWT, (req, res) => {
    // First, find question with id in url
    Question.findOne({
@@ -90,6 +105,9 @@ router.post('/answer/:id', authenticateJWT, (req, res) => {
       // Save changes to question
       question.save()
       .then(question => {
+         question.subscribers.map(function(obj){
+            notifyUser(question.title, obj.subscriberUser);
+         });
          return res.json('Answer posted successfully');
       });
    })
@@ -166,6 +184,37 @@ router.get('/downvote/:id', authenticateJWT, (req, res) => {
          question.save()
          .then(question => {
             return res.json('Question downvoted successfully');
+         });
+      }
+   })
+   .catch(err => {
+      res.status(500).json({ message: err.message });
+   })
+});
+
+// Subscribe to Question
+router.get('/subscribe/:id', authenticateJWT, (req, res) => {
+   const { id } = req.user;
+   // First, find question with id in url
+   Question.findOne({
+      _id: req.params.id
+   })
+   .then(question => {
+      // Putting subscriber user ids in an array
+      var arrayOfSubscriberIds = question.subscribers.map(function(obj) {
+         return obj.subscriberUser;
+      });
+      // Checking if logged in user is in subscriber array
+      if(arrayOfSubscriberIds.includes(id)){ // User has subscribed to this question previously
+         res.status(403).json('You are already subscribed to this question!');
+      }
+      else{
+         // Add user to subscriber array
+         question.subscribers.unshift({ subscriberUser: id });
+         // Save changes to question
+         question.save()
+         .then(question => {
+            return res.json('You have successfully subscribed to this question and will be notified when it is answered!');
          });
       }
    })
