@@ -22,7 +22,7 @@ router.get('/questions', (req, res) => {
       // Find question with either title or body containing search string
       { $or: [ {title: {$regex: new RegExp(q)}}, {body: {$regex: new RegExp(q)}} ]},
       // Exclude some data from documents
-      { __v: 0}
+      { __v: 0, answers: 0}
    )
    .populate('user answers.answerUser', '_id lastname firstname')
    .then(questions => {
